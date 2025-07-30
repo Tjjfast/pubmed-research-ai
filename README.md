@@ -14,7 +14,7 @@ This agent allows users to query PubMed in **natural language** (e.g., “Is Ash
 - Ayurveda-focused filtering logic
 - Summarization of research papers
 - Debug mode to show tool usage & reasoning
-- CLI interface + optional Agent-UI frontend
+- Agent-UI frontend
 
 ---
 
@@ -58,7 +58,7 @@ Enter y to create a new project, install dependencies, then run the agent-ui usi
 ```
 cd agent-ui && npm run dev
 ```
-Open http://localhost:3000 to view the Agent UI, but remember to connect to the local agent.
+Open `http://localhost:3000` to view the Agent UI, but remember to connect to the local agent.
 ## Connecting the Ayurveda agent
 The Agent UI needs to connect to a playground server, which you can do by locally running the agent file using
 ```
@@ -72,15 +72,15 @@ Example:
 > What are the benefits of Triphala in gut health?
 ```
 The agent will:
-> Search PubMed
-> Filter Ayurvedic results
-> Summarize and return key findings
+* Search PubMed
+* Filter Ayurvedic results
+* Summarize and return key findings
 
 ## Troubleshooting
 503 Gemini Model Error?
 This can happen when Gemini API is overloaded. Retry after a few minutes, or switch to OpenAI's GPT-4 temporarily.
 
-##📂 Folder Structure
+## 📂 Folder Structure
 .
 ├── Agent.py
 ├── .env
