@@ -76,18 +76,18 @@ The agent will:
 * Filter Ayurvedic results
 * Summarize and return key findings
 
+## 📂 Folder Structure
+.
+├── Agent.py              # Main script to run the agent
+├── .env                  # Environment variables (e.g., API keys)
+├── README.md             # Project overview and setup instructions
+├── requirements.txt      # Python dependencies
+
+## Built with:
+* Agno SDK
+* Google Gemini
+* PubMed API
+
 ## Troubleshooting
 503 Gemini Model Error?
 This can happen when Gemini API is overloaded. Retry after a few minutes, or switch to OpenAI's GPT-4 temporarily.
-
-## 📂 Folder Structure
-.
-├── Agent.py
-├── .env
-├── README.md
-└── requirements.txt
-
-## Built with:
-Agno SDK
-Google Gemini
-PubMed API
