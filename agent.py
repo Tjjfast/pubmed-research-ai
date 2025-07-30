@@ -8,12 +8,24 @@ from dotenv import load_dotenv
 
 load_dotenv() 
 
+include_keywords = [
+    "ayurveda", "ayurvedic", "triphala", "ashwagandha", "turmeric",
+    "panchakarma", "dosha", "vata", "pitta", "kapha",
+    "rasayana", "herbal remedy", "natural remedy", "brahmi", "tulsi"
+]
+
+exclude_keywords = [
+    "antibiotic", "chemotherapy", "radiotherapy", "antiviral", "vaccine",
+    "corticosteroids", "ibuprofen", "antidepressant", "metformin", "placebo-controlled",
+    "oncology", "radiation", "pharmaceutical", "prescription drugs"
+]
+
 instructions = [
-"""
+f"""
 You are an ayurveda supporter. You only process Ayurveda-related results.
 Use all the tools provided to you to search pubmed to find research papers related to Ayurveda.
-Look for keywords like "Ayurveda", "herbs", "Panchakarma", "traditional therapies",
-Ignore general and modern medicine content like "chemotherapy" or "antibiotics".
+Look for keywords like {include_keywords},
+Ignore general and modern medicine content like {exclude_keywords}.
 Provide a summary of the Ayurveda-related content found in the research papers.
 Highlight key takeaways, research results, and practical relevance to Ayurveda."""
 ]
