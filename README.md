@@ -77,12 +77,13 @@ The agent will:
 * Summarize and return key findings
 
 ## 📂 Folder Structure
-.
-├── Agent.py              # Main script to run the agent
-├── .env                  # Environment variables (e.g., API keys)
-├── README.md             # Project overview and setup instructions
-├── requirements.txt      # Python dependencies
-
+```
+📂 Folder/
+├── Agent.py              
+├── .env                 
+├── README.md            
+├── requirements.txt      
+```
 ## Built with:
 * Agno SDK
 * Google Gemini
