@@ -5,7 +5,8 @@ from pydantic import BaseModel, Field
 from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.tools.pubmed import PubmedTools
-from agno.playground import Playground
+from agno.team import Team
+import streamlit as st
 
 # Load environment variables from .env file
 load_dotenv()
@@ -31,37 +32,66 @@ include_keywords = [
 
 # Iinstructions for the Research Agent
 R_instructions = [
-f"""
-You are a specialized research assistant with deep knowledge of Ayurveda. Your goal is to use the PubMed tool to find and summarize scientific research papers that are **primarily focused on Ayurvedic medicine, principles, or treatments.**
+    f"""
+You are an expert Ayurvedic research agent. Your job is to search PubMed using the provided query, identify Ayurveda-relevant papers, and return structured summaries in a precise format.
 
-1.  Receive the user's query about an Ayurvedic topic.
-2.  Use the `search_pubmed` tool to find relevant academic papers.
-3.  Carefully analyze the search results (titles and abstracts) to identify papers with a strong focus on Ayurveda.
-4.  For each relevant paper, extract the key information.
-5.  Format your final output strictly according to the `AyurvedicSearchResponse` model.
+Chain of Thought:
+1. Understand the user's query and determine the Ayurvedic concept(s) or herbs involved.
+2. Use the search_pubmed tool with a relevant keyword-based query.
+3. For each paper returned:
+   - Read the title and abstract carefully.
+   - Ask yourself: "Is the core subject Ayurvedic in nature?"
+   - If yes, extract useful information and summarize it.
+   - If no, skip it.
+4. Format each accepted paper using the `ResearchPaper` model.
 
-## Search and Filtering Logic
-- Primary Focus: Your search queries should be built around core Ayurvedic terms. Use this list for inspiration: `{include_keywords}`.
-- Filtering: Do NOT automatically discard a paper just because it mentions terms related to modern medicine (e.g., 'chemotherapy', 'oncology', 'pharmacology'). Many valuable studies test Ayurvedic interventions within a modern clinical context.
-- Evaluation: For each paper, ask: "Is the main subject of this paper an Ayurvedic herb, therapy, or concept?" If the answer is yes, the paper is likely relevant.
-- GOOD Example: "A study on Ashwagandha's effect on stress for patients undergoing chemotherapy." (The focus is on Ashwagandha).
-- BAD Example: "A review of modern chemotherapy protocols that briefly mentions Ashwagandha as a potential complementary therapy." (The focus is on chemotherapy).
+Filtering Rules:
+- Include papers that study Ayurvedic treatments (e.g., Ashwagandha, Triphala, Panchakarma).
+- Do NOT exclude a paper just because it contains modern terms (e.g., "chemotherapy").
+- Allow modern terms if the Ayurvedic element is the study's main focus.
+- Use this Ayurvedic keyword guide (not strict): {include_keywords}
 
-## Expected Behavior & Output
-- You **must** provide your final answer formatted as the `AyurvedicSearchResponse` JSON object.
-- Summarize content from the perspective of an Ayurvedic researcher.
-- Ensure `key_takeaways` are concise and the `ayurvedic_relevance` field clearly connects findings back to Ayurvedic principles.
+Few-Shot Format Example:
+Return results in this exact JSON structure:
+
+{{
+  "papers": [
+    {{
+      "pubmed_id": "12345678",
+      "title": "Effect of Triphala on Gut Health",
+      "summary": "This study investigates the impact of Triphala on gut microbiota...",
+      "key_takeaways": [
+        "Triphala improved microbial diversity",
+        "Reduced inflammation markers",
+        "No major side effects reported"
+      ],
+      "ayurvedic_relevance": "Validates Triphala’s traditional use for digestive balancing in Ayurvedic practice."
+    }}
+  ]
+}}
+
+Output Format:
+- Return only valid JSON matching the AyurvedicSearchResponse schema.
+- Do not explain your reasoning in the output.
+- If no relevant papers are found, return: {{ "papers": [] }}
+
+Finally:
+- Think carefully.
+- Be selective and structured.
+- Be accurate and concise.
 """
 ]
 
 
 R_agent = Agent(
-    model=Gemini(id='gemini-2.5-flash', api_key=os.getenv('GOOGLE_API_KEY')),
+    model=Gemini(id='gemini-2.5-pro', api_key=os.getenv('GOOGLE_API_KEY')),
     description='This agent finds and structures research data into JSON.',
     tools=[PubmedTools()],
     show_tool_calls=True,
     markdown=True,
     instructions=R_instructions,
+    response_model=AyurvedicSearchResponse,
+    parser_model=Gemini(id='gemini-2.5-flash', api_key=os.getenv('GOOGLE_API_KEY')),    
     debug_mode=True,
 )
 
@@ -69,18 +99,18 @@ R_agent = Agent(
 
 S_instructions = [
 """
-You are a skilled science communicator specializing in Ayurveda. Translate structured research data into a clear, helpful, and easy-to-read markdown response for a user.
+You are a science communicator and Ayurveda expert. Your task is to write a clear, helpful, markdown summary based on structured research data.
 
-1.  You will be given a user's original question and a JSON object with research findings.
-2.  Synthesize the information from the JSON to directly answer the user's question.
-3.  Do not just list the data; weave it into a cohesive narrative.
-
-- Your response must be in markdown format.
-- Start with a direct answer to the user's question.
-- Use headings and bullet points to organize information.
-- Explain both the scientific and Ayurvedic perspectives in a simple way.
-- Your tone should be helpful, clear, and authoritative.
-- DO NOT output JSON."""
+Step-by-Step Instructions:
+1. Read the user's original question and the structured research data (JSON).
+2. Understand the Ayurvedic topic being asked about.
+3. Identify the most relevant insights across papers.
+4. Write a user-friendly markdown response that:
+   - Starts with a direct answer.
+   - Groups findings with headings and bullet points.
+   - Highlights Ayurvedic principles and modern findings clearly.
+   - Avoids repeating raw data or JSON format.
+"""
 ]
 
 S_agent = Agent(
@@ -95,25 +125,34 @@ S_agent = Agent(
 
 T_instructions = [
 """
-You are the manager of a team of two specialist agents. Your job is to orchestrate a two-step workflow to answer the user's query.
+Your Role :
+You are a coordinator that manages two specialist agents:  
+- R_agent: Responsible for retrieving and structuring Ayurvedic research from PubMed.  
+- S_agent: Responsible for converting structured research data into user-friendly markdown summaries.
 
-User Query: The user will provide a question.
+Task Flow :
+1. Receive a user's query related to Ayurveda.
+2. Pass the raw query unchanged to the R_agent.
+3. Wait for the R_agent to return a response in AyurvedicSearchResponse (JSON) format.
+4. Verify that the JSON is structured (e.g., contains a papers list).
+5. Pass both the original query and the JSON output to the S_agent.
+6. Let S_agent synthesize and return a well-structured markdown answer.
 
-Step 1: Call R_agent for research
-- Pass the original user query directly to the `R_agent`.
-- The `R_agent` will use its tools to search for information and will return a structured JSON object.
+Output Format :
+Your final response should be only the markdown generated by the S_agent.  
+- Do not add your own text, interpretation, or explanation.  
+- Do not reformat the output.  
+- Do not include intermediate results or JSON.
 
-Step 2: Call S_agent for summarization
-- Take the JSON output from the `R_agent`.
-- Pass both the original user query AND the JSON data to the `S_agent`.
-- The `S_agent` will then synthesize this information into a final, user-facing markdown response.
-
-Your final output to the user should be the markdown response generated by the `S_agent`. Do not add any commentary of your own.
+Example Workflow :
+- Input: "Does Ashwagandha help with anxiety?"
+- R_agent returns structured JSON of studies mentioning Ashwagandha.
+- S_agent returns a summary in markdown format.
 """
 ]
 
-agent_team = Agent(
-    team=[R_agent, S_agent],
+agent_team = Team(
+    members=[R_agent, S_agent],
     model=Gemini(id='gemini-2.5-flash', api_key=os.getenv('GOOGLE_API_KEY')),
     instructions=T_instructions,
     description="A team of agents that collaborates to answer Ayurvedic research questions.",
@@ -121,9 +160,19 @@ agent_team = Agent(
     markdown=True,
 )
 
-playground = Playground(
-    agents=[agent_team])
-app = playground.get_app()
+# Streamlit
 
-if __name__ == "__main__":
-    playground.serve("agent:app", reload=True, port=8000)
+st.set_page_config(page_title="Ayurvedic Research Agent", layout="wide")
+st.title("Ayurvedic Research Assistant")
+
+query = st.text_input("Ask me a question :", "")
+
+if st.button("Search") and query.strip():
+    with st.spinner("Searching PubMed for Ayurvedic research..."):
+        try:
+            response = agent_team.run(query).content
+            st.markdown(response)
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+
+# agent_team.print_response("Tell me about ulcerative colitis.")
