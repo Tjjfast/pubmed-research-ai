@@ -3,6 +3,11 @@
 An intelligent AI Agent that searches Ayurvedic research papers from **PubMed** and summarizes the results. Powered by **Google Gemini** via Agno's framework, the agent leverages PubMed tools with custom logic for relevance, filtering, and structured output.
 
 ---
+## Demo
+<img width="1918" height="822" alt="Image" src="https://github.com/user-attachments/assets/2d89c0d6-2512-4d4a-b88f-89d47df659af" />
+<img width="1912" height="853" alt="Image" src="https://github.com/user-attachments/assets/855af7d3-0e2f-4217-b161-cc24bca4f26a" />
+<img width="1914" height="822" alt="Image" src="https://github.com/user-attachments/assets/0ede7d9c-398d-44c2-a076-7b9621fbaf5b" />
+<img width="1913" height="679" alt="Image" src="https://github.com/user-attachments/assets/171d64b3-c8f8-4d8a-a0b1-5600ce16ade5" />
 
 ## Project Overview
 
@@ -69,7 +74,7 @@ Head to `http://localhost:3000/`
 You’ll be prompted to enter a natural language query.
 Example:
 ```
-> What are the benefits of Triphala in gut health?
+> I have digestive issues after meals - what can help?
 ```
 The agent will:
 * Search PubMed
